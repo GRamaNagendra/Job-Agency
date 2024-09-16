@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,8 @@ public class ContentController {
     public String handleWelcome() {
         return "home";
     }
+    
+  
 
     @GetMapping("/admin/home")
     @PreAuthorize("hasRole('ADMIN')")
@@ -61,12 +65,14 @@ public class ContentController {
             email = token.getPrincipal().getAttribute("email");
             username = token.getPrincipal().getAttribute("name");
             profilePicture = token.getPrincipal().getAttribute("picture");  // Get Gmail profile picture URL
+            
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             UsernamePasswordAuthenticationToken token = (UsernamePasswordAuthenticationToken) authentication;
             MyUser user = (MyUser) token.getPrincipal();
             email = user.getEmail();
             username = user.getUsername();
             profilePicture = user.getProfilePicture();  // Get profile picture from MyUser entity
+            
         } else {
             throw new RuntimeException("Unsupported authentication type");
         }
@@ -79,6 +85,8 @@ public class ContentController {
         userProfile.put("mobileNumber", user.getMobilenumber());
         userProfile.put("profilePicture", profilePicture);  // Add profile picture to response
         userProfile.put("lastLogin", user.getLastLogin());  // Add last login time to response
+       userProfile.put("Role", user.getRole());
+       System.out.println(user.getRole());
         return userProfile;
     }
 
@@ -188,5 +196,25 @@ public class ContentController {
         } else {
             return ResponseEntity.status(404).body("User not found");
         }
+    }
+    
+    
+    
+    @GetMapping("/current-user")
+    public Map<String, Object> getCurrentUser(Authentication authentication) {
+        String username = authentication.getName();
+        MyUser user = myUserRepository.findByUsername(username).orElse(null);
+
+        Map<String, Object> response = new HashMap<>();
+        if (user != null) {
+            response.put("username", user.getUsername());
+            response.put("roles", user.getRole());
+            response.put("email", user.getEmail());
+            response.put("profilePicture", user.getProfilePicture());
+        } else {
+            response.put("error", "User not found");
+        }
+
+        return response;
     }
 }

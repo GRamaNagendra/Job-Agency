@@ -15,14 +15,17 @@ public class MyUser {
 
     private String username;
     private String password;
-    private String role; // Eg: ADMIN, USER
+    private String role;
     private String email;
-    private Long mobilenumber; 
-    private LocalDateTime lastLogin; // Field for last login timestamp
-    private String profilePicture;  // Field for profile picture URL
+    private Long mobilenumber;
+    private LocalDateTime lastLogin;
+    private String profilePicture;
+    private String accessToken;
 
-    // Constructor with all fields
-    public MyUser(String username, String password, String role, String email, Long mobilenumber, LocalDateTime lastLogin, String profilePicture) {
+    // Constructors
+    public MyUser() {}
+
+    public MyUser(String username, String password, String role, String email, Long mobilenumber, LocalDateTime lastLogin, String profilePicture, String accessToken) {
         this.username = username;
         this.password = password;
         this.role = role;
@@ -30,11 +33,7 @@ public class MyUser {
         this.mobilenumber = mobilenumber;
         this.lastLogin = lastLogin;
         this.profilePicture = profilePicture;
-    }
-
-    // Default constructor
-    public MyUser() {
-        // Default constructor
+        this.accessToken = accessToken;
     }
 
     // Getters and Setters
@@ -100,5 +99,13 @@ public class MyUser {
 
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 }
