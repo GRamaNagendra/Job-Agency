@@ -17,6 +17,10 @@ public class JobPosting {
     private String companyName;
     private String location;
     private double salary;
+    private boolean Live;
+
+    // New field for category
+    private String category;
 
     // Getters and Setters
     public Long getId() {
@@ -66,4 +70,23 @@ public class JobPosting {
     public void setSalary(double salary) {
         this.salary = salary;
     }
+
+    // Getter and Setter for category
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+	public boolean isLive() {
+		return Live;
+	}
+
+	public void setLive(boolean live) {
+		Live = live;
+	}
+
+
 }

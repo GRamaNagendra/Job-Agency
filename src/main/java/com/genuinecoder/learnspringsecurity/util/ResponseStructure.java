@@ -1,3 +1,4 @@
+
 package com.genuinecoder.learnspringsecurity.util;
 
 public class ResponseStructure<T> {

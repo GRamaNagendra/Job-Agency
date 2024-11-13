@@ -2,6 +2,11 @@ package com.genuinecoder.learnspringsecurity;
 
 import com.genuinecoder.learnspringsecurity.model.MyUser;
 import com.genuinecoder.learnspringsecurity.model.MyUserRepository;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,7 +34,25 @@ public class ContentController {
     public String handleWelcome() {
         return "home";
     }
-    
+
+    @PostMapping("admin/logout")
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        // Invalidate the session
+        request.getSession().invalidate();
+
+        // Clear any relevant cookies
+        Cookie originalUrlCookie = new Cookie("originalUrl", null);
+        originalUrlCookie.setMaxAge(0); // Expire the cookie immediately
+        response.addCookie(originalUrlCookie);
+
+        // You can add additional cookies to clear if necessary
+        Cookie userCookie = new Cookie("user", null);
+        userCookie.setMaxAge(0);
+        response.addCookie(userCookie);
+
+        // Optionally, you could also set a logout confirmation message here
+    }
+
   
 
     @GetMapping("/admin/home")
@@ -139,23 +162,36 @@ public class ContentController {
     @ResponseBody
     public ResponseEntity<String> assignRole(@RequestBody Map<String, String> request) {
         String email = request.get("email");
+        String newRole = request.get("role");
+
         if (email == null || email.isEmpty()) {
             return ResponseEntity.badRequest().body("Email is required");
+        }
+
+        if (newRole == null || (!newRole.equals("ROLE_ADMIN") && !newRole.equals("ROLE_USER"))) {
+            return ResponseEntity.badRequest().body("Valid role is required");
         }
 
         Optional<MyUser> userOptional = myUserRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             MyUser user = userOptional.get();
-            if ("ROLE_ADMIN".equals(user.getRole())) {
-                return ResponseEntity.badRequest().body("User already has ADMIN role");
+
+            // Check if the user already has the requested role
+            if (newRole.equals(user.getRole())) {
+                return ResponseEntity.badRequest().body("User already has the requested role");
             }
-            user.setRole("ROLE_ADMIN");
+
+            // Update the role
+            user.setRole(newRole);
             myUserRepository.save(user);
-            return ResponseEntity.ok("Admin role assigned successfully");
+
+            String message = newRole.equals("ROLE_ADMIN") ? "Admin role assigned successfully" : "Admin role revoked successfully";
+            return ResponseEntity.ok(message);
         } else {
             return ResponseEntity.status(404).body("User not found");
         }
     }
+
 
     @DeleteMapping("/admin/users/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -216,5 +252,26 @@ public class ContentController {
         }
 
         return response;
+    }
+    
+    
+    @DeleteMapping("/admin/users/delete-selected")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<String> deleteSelectedUsers(@RequestBody List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return ResponseEntity.badRequest().body("User IDs are required");
+        }
+
+        for (Long id : userIds) {
+            Optional<MyUser> userOptional = myUserRepository.findById(id);
+            if (userOptional.isPresent()) {
+                myUserRepository.deleteById(id);
+            } else {
+                return ResponseEntity.status(404).body("User with ID " + id + " not found");
+            }
+        }
+
+        return ResponseEntity.ok("Selected users deleted successfully");
     }
 }

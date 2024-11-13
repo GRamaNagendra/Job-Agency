@@ -30,14 +30,16 @@ public class SecurityConfiguration {
  public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
      return httpSecurity
          .csrf(csrf -> csrf
-             .ignoringRequestMatchers("/oauth2/**", "/update", "/job-postings/**", "/admin/**"))
+             .ignoringRequestMatchers("/oauth2/**", "/update", "/job-postings/**", "/admin/**","/interaction/**"))
          .cors(cors -> cors
              .configurationSource(corsConfigurationSource()))
          .authorizeHttpRequests(authz -> authz
-             .requestMatchers("/home", "/register/**", "/login").permitAll()
+             .requestMatchers("/home", "/register/**", "/login", "/job-postings/**","/interaction/**").permitAll()
              .requestMatchers("/admin/**").hasRole("ADMIN")
              .requestMatchers("/user/**").hasRole("USER")
              .requestMatchers("/update").authenticated()
+             .requestMatchers("/interaction/**").authenticated()
+             
              .anyRequest().authenticated())
          .oauth2Login(oauth2 -> oauth2
              .loginPage("http://localhost:3000/login") // Redirect to React login page
