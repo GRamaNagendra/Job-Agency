@@ -1,3 +1,4 @@
+package com.genuinecoder.learnspringsecurity.controller;
 //package com.genuinecoder.learnspringsecurity;
 //
 //import com.genuinecoder.learnspringsecurity.model.MyUser;

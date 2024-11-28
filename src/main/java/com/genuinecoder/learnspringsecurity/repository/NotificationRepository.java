@@ -1,7 +1,8 @@
 package com.genuinecoder.learnspringsecurity.repository;
 
-import com.genuinecoder.learnspringsecurity.model.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.genuinecoder.learnspringsecurity.model.Notification;
 
 import java.util.List;
 import java.util.Optional;

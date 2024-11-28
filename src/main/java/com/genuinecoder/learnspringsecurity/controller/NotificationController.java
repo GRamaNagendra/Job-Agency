@@ -1,84 +1,83 @@
 package com.genuinecoder.learnspringsecurity.controller;
 
-import com.genuinecoder.learnspringsecurity.model.Notification;
-import com.genuinecoder.learnspringsecurity.repository.NotificationRepository;
-import com.genuinecoder.learnspringsecurity.util.ResponseStructure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.genuinecoder.learnspringsecurity.model.Notification;
+import com.genuinecoder.learnspringsecurity.service.NotificationService;
+
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("admin/notifications")
+@RequestMapping("/interaction")  // Base path for the interaction controller
 public class NotificationController {
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    private NotificationService notificationService;
 
-    // Create a notification
-    @PostMapping
-    public ResponseEntity<ResponseStructure<Notification>> createNotification(@RequestBody Notification notification) {
-        Notification savedNotification = notificationRepository.save(notification);
-
-        ResponseStructure<Notification> responseStructure = new ResponseStructure<>();
-        responseStructure.setStatus(HttpStatus.CREATED.value());
-        responseStructure.setMessage("Notification Created Successfully");
-        responseStructure.setData(savedNotification);
-
-        return new ResponseEntity<>(responseStructure, HttpStatus.CREATED);
+    // Create a new notification message
+    @PostMapping("/create")  // Endpoint to create a new notification
+    public ResponseEntity<Notification> createNotification(@RequestBody Notification notification) {
+        try {
+            Notification savedNotification = notificationService.createNotification(notification);
+            return new ResponseEntity<>(savedNotification, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // Get all notifications
-    @GetMapping
-    public ResponseEntity<ResponseStructure<List<Notification>>> getAllNotifications() {
-        List<Notification> notifications = notificationRepository.findAll();
-        ResponseStructure<List<Notification>> responseStructure = new ResponseStructure<>();
-        responseStructure.setStatus(HttpStatus.OK.value());
-        responseStructure.setMessage("Notifications Retrieved Successfully");
-        responseStructure.setData(notifications);
-
-        return ResponseEntity.ok(responseStructure);
+    @GetMapping("/all")  // Endpoint to get all notifications
+    public ResponseEntity<List<Notification>> getAllNotifications() {
+        try {
+            List<Notification> notifications = notificationService.getAllNotifications();
+            if (notifications.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204 if no content
+            }
+            return new ResponseEntity<>(notifications, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    // Delete a notification by ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseStructure<String>> deleteNotification(@PathVariable Long id) {
-        return notificationRepository.findById(id)
-                .map(existingNotification -> {
-                    notificationRepository.delete(existingNotification);
-                    ResponseStructure<String> responseStructure = new ResponseStructure<>();
-                    responseStructure.setStatus(HttpStatus.NO_CONTENT.value());
-                    responseStructure.setMessage("Notification Deleted Successfully");
-                    responseStructure.setData("Deleted Notification with id " + id);
-                    return ResponseEntity.ok(responseStructure);
-                })
-                .orElseThrow(() -> new RuntimeException("Notification not found with id " + id));
-    }
-    
-    @PostMapping("/custom")
-    @PreAuthorize("hasRole('ADMIN')")  // Only admin can send custom notifications
-    public ResponseEntity<ResponseStructure<Notification>> sendCustomNotification(
-            @RequestParam Long userId,
-            @RequestParam String message,
-            @RequestParam String type) {
-
-        // Create a new notification
-        Notification notification = new Notification();
-        notification.setUserId(userId);
-        notification.setMessage(message);
-        notification.setType(type);  // "wish" or "custom_message" for example
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        ResponseStructure<Notification> responseStructure = new ResponseStructure<>();
-        responseStructure.setStatus(HttpStatus.CREATED.value());
-        responseStructure.setMessage("Custom Notification Sent Successfully");
-        responseStructure.setData(savedNotification);
-
-        return new ResponseEntity<>(responseStructure, HttpStatus.CREATED);
+    // Get a notification by ID
+    @GetMapping("/{id}")  // Endpoint to get a notification by its ID
+    public ResponseEntity<Notification> getNotificationById(@PathVariable Long id) {
+        try {
+            Optional<Notification> notification = notificationService.getNotificationById(id);
+            return notification.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()); // 404 if not found
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
+    // Update an existing notification message
+    @PutMapping("/update/{id}")  // Endpoint to update an existing notification by ID
+    public ResponseEntity<Notification> updateNotification(@PathVariable Long id, @RequestBody Notification notification) {
+        try {
+            Notification updatedNotification = notificationService.updateNotification(id, notification);
+            return updatedNotification != null
+                    ? new ResponseEntity<>(updatedNotification, HttpStatus.OK) // 200 if updated
+                    : new ResponseEntity<>(HttpStatus.NOT_FOUND); // 404 if not found
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500 for server errors
+        }
+    }
+
+    // Delete a notification message
+    @DeleteMapping("/delete/{id}")  // Endpoint to delete a notification by ID
+    public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
+        try {
+            boolean deleted = notificationService.deleteNotification(id);
+            return deleted
+                    ? ResponseEntity.noContent().build() // 204 if deleted successfully
+                    : ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 if not found
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500 for server errors
+        }
+    }
 }

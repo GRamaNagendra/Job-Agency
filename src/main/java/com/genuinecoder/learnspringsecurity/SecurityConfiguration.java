@@ -1,6 +1,5 @@
 package com.genuinecoder.learnspringsecurity;
-import com.genuinecoder.learnspringsecurity.model.MyUserDetailService;
-import com.genuinecoder.learnspringsecurity.model.MyUserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +13,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import com.genuinecoder.learnspringsecurity.repository.MyUserRepository;
+
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;

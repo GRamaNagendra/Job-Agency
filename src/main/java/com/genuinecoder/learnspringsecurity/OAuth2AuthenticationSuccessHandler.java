@@ -1,7 +1,5 @@
 package com.genuinecoder.learnspringsecurity;
 
-import com.genuinecoder.learnspringsecurity.model.MyUser;
-import com.genuinecoder.learnspringsecurity.model.MyUserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +9,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+
+import com.genuinecoder.learnspringsecurity.model.MyUser;
+import com.genuinecoder.learnspringsecurity.repository.MyUserRepository;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

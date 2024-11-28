@@ -1,4 +1,4 @@
-package com.genuinecoder.learnspringsecurity;
+package com.genuinecoder.learnspringsecurity.exception;
 
 import java.nio.file.AccessDeniedException;
 

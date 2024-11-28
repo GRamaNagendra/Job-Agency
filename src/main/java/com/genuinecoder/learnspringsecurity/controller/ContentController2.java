@@ -1,7 +1,4 @@
-package com.genuinecoder.learnspringsecurity;
-
-import com.genuinecoder.learnspringsecurity.model.MyUser;
-import com.genuinecoder.learnspringsecurity.model.MyUserRepository;
+package com.genuinecoder.learnspringsecurity.controller;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +15,9 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import com.genuinecoder.learnspringsecurity.model.MyUser;
+import com.genuinecoder.learnspringsecurity.repository.MyUserRepository;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,7 @@ import java.util.Optional;
 
 @Controller
 @RequestMapping
-public class ContentController {
+public class ContentController2 {
 
     @Autowired
     private MyUserRepository myUserRepository;

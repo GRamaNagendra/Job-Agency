@@ -19,12 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.genuinecoder.learnspringsecurity.exception.JobPostingNotFoundException;
 import com.genuinecoder.learnspringsecurity.model.JobApplication;
-import com.genuinecoder.learnspringsecurity.model.JobApplicationRepository;
 import com.genuinecoder.learnspringsecurity.model.JobPosting;
-import com.genuinecoder.learnspringsecurity.model.JobPostingRepository;
 import com.genuinecoder.learnspringsecurity.model.Notification;
+import com.genuinecoder.learnspringsecurity.repository.JobApplicationRepository;
+import com.genuinecoder.learnspringsecurity.repository.JobPostingRepository;
 import com.genuinecoder.learnspringsecurity.repository.NotificationRepository;
 import com.genuinecoder.learnspringsecurity.util.ResponseStructure;
+
+import jakarta.transaction.Transactional;
 
 @RestController
 @RequestMapping("/job-postings")
@@ -58,15 +60,15 @@ public class JobPostingController {
     @PreAuthorize("hasRole('ADMIN')")  // Ensure only admin can access
     public ResponseEntity<ResponseStructure<JobPosting>> createJobPostingAsAdmin(@RequestBody JobPosting jobPosting) {
         // Admin sets live status directly
+    	jobPosting.setLive(true);
         JobPosting savedJobPosting = jobPostingRepository.save(jobPosting);
 
         // If job posting is live, create a corresponding notification
       
             Notification notification = new Notification();
-            notification.setJobTitle(savedJobPosting.getTitle());
-            notification.setJobId(savedJobPosting.getId());
-            notification.setSalary(savedJobPosting.getSalary());
 
+            notification.setJobId(savedJobPosting.getId());
+         
             // Save the notification to the repository
             notificationRepository.save(notification);
         
@@ -92,8 +94,9 @@ public class JobPostingController {
 
         if (optionalJobPosting.isPresent()) {
             JobPosting jobPosting = optionalJobPosting.get();
+            
             // Toggle live status
-            jobPosting.setLive(!jobPosting.isLive()); 
+            jobPosting.setLive(!jobPosting.isLive());
             JobPosting updatedJobPosting = jobPostingRepository.save(jobPosting);
 
             // Handle notifications: if job is inactive, delete associated notifications
@@ -104,7 +107,8 @@ public class JobPostingController {
                 }
             } else {
                 // If job becomes active, create a new notification
-                Notification newNotification = new Notification(jobPosting.getTitle(), jobPosting.getId(), jobPosting.getSalary());
+                String notificationMessage = "Job posting for job ID " + jobPosting.getId() + " is now live.";
+                Notification newNotification = new Notification(jobPosting.getId());
                 notificationRepository.save(newNotification);
             }
 
@@ -128,20 +132,33 @@ public class JobPostingController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseStructure<JobPosting>> getJobPosting(@PathVariable Long id) {
+    public ResponseEntity<ResponseStructure<Object>> getJobPosting(@PathVariable Long id) {
         return jobPostingRepository.findById(id)
                 .map(jobPosting -> {
-                    if (jobPosting.isLive()) { // Check if the job posting is live
-                        ResponseStructure<JobPosting> responseStructure = new ResponseStructure<>();
+                    ResponseStructure<Object> responseStructure = new ResponseStructure<>();
+                    
+                    if (jobPosting.isLive()) {
+                        // Job is live
                         responseStructure.setStatus(HttpStatus.OK.value());
                         responseStructure.setMessage("Job Posting Found");
                         responseStructure.setData(jobPosting);
                         return ResponseEntity.ok(responseStructure);
                     } else {
-                        throw new JobPostingNotFoundException("Job Posting is not live with id " + id);
+                        // Job exists but is not live
+                        responseStructure.setStatus(HttpStatus.NOT_FOUND.value());
+                        responseStructure.setMessage("Job Posting is not live");
+                        responseStructure.setData(null);
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseStructure);
                     }
                 })
-                .orElseThrow(() -> new JobPostingNotFoundException("Job Posting not found with id " + id));
+                .orElseGet(() -> {
+                    // Job not found
+                    ResponseStructure<Object> responseStructure = new ResponseStructure<>();
+                    responseStructure.setStatus(HttpStatus.NOT_FOUND.value());
+                    responseStructure.setMessage("Job Posting not found with id " + id);
+                    responseStructure.setData(null);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseStructure);
+                });
     }
 
 
@@ -183,12 +200,6 @@ public class JobPostingController {
                     JobPosting updatedJobPosting = jobPostingRepository.save(jobPosting);
                     
                     // Find and update related notifications
-                    List<Notification> notifications = notificationRepository.findByJobId(id);
-                    for (Notification notification : notifications) {
-                        notification.setJobTitle(jobPosting.getTitle());  // Sync the job title with notification
-                        notification.setSalary(jobPosting.getSalary());      // Sync the salary
-                        notificationRepository.save(notification);          // Update the notification
-                    }
                     
                     // Build response
                     ResponseStructure<JobPosting> responseStructure = new ResponseStructure<>();
@@ -202,27 +213,38 @@ public class JobPostingController {
     }
 
 
- // Delete JobPosting and its notifications
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseStructure<String>> deleteJobPosting(@PathVariable Long id) {
-        return jobPostingRepository.findById(id)
-                .map(existingJobPosting -> {
-                    // Delete related notifications
+    // Delete JobPosting and its notifications
+
+@Transactional  // Ensure that all database operations happen within a transaction
+@DeleteMapping("/{id}")
+public ResponseEntity<ResponseStructure<String>> deleteJobPosting(@PathVariable Long id) {
+    return jobPostingRepository.findById(id)
+            .map(existingJobPosting -> {
+                try {
+                    // Delete related notifications first
                     notificationRepository.deleteByJobId(id);
 
                     // Delete job posting
                     jobPostingRepository.delete(existingJobPosting);
 
+                    // Build response
                     ResponseStructure<String> responseStructure = new ResponseStructure<>();
                     responseStructure.setStatus(HttpStatus.NO_CONTENT.value());
                     responseStructure.setMessage("Job Posting and related notifications deleted successfully");
                     responseStructure.setData("Deleted Job Posting with id " + id);
                     return ResponseEntity.ok(responseStructure);
-                })
-                .orElseThrow(() -> new JobPostingNotFoundException("Job Posting not found with id " + id));
-    }
 
-
+                } catch (Exception e) {
+                    // Handle any exceptions that occur during the deletion process
+                    ResponseStructure<String> errorResponse = new ResponseStructure<>();
+                    errorResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    errorResponse.setMessage("Failed to delete job posting and related notifications");
+                    errorResponse.setData(e.getMessage());
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+                }
+            })
+            .orElseThrow(() -> new JobPostingNotFoundException("Job Posting not found with id " + id));
+}
     @PostMapping("/{id}/apply")
     public ResponseEntity<ResponseStructure<String>> applyForJob(@PathVariable Long id, @RequestBody String applicantEmail) {
         if (!jobPostingRepository.existsById(id)) {

@@ -1,15 +1,16 @@
-package com.genuinecoder.learnspringsecurity;
+package com.genuinecoder.learnspringsecurity.controller;
 
-import com.genuinecoder.learnspringsecurity.model.ContactForm;
-import com.genuinecoder.learnspringsecurity.model.ContactFormRepository;
-import com.genuinecoder.learnspringsecurity.model.Feedback;
-import com.genuinecoder.learnspringsecurity.model.FeedbackRepository;
-import com.genuinecoder.learnspringsecurity.model.MyUser;
-import com.genuinecoder.learnspringsecurity.model.MyUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import com.genuinecoder.learnspringsecurity.model.ContactForm;
+import com.genuinecoder.learnspringsecurity.model.Feedback;
+import com.genuinecoder.learnspringsecurity.model.MyUser;
+import com.genuinecoder.learnspringsecurity.repository.ContactFormRepository;
+import com.genuinecoder.learnspringsecurity.repository.FeedbackRepository;
+import com.genuinecoder.learnspringsecurity.repository.MyUserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -111,7 +112,7 @@ public class UserInteractionController {
 
     // Admin view all feedbacks
     @GetMapping("/feedback/all")
-    @PreAuthorize("hasRole('ADMIN')")
+
     public List<Feedback> getAllFeedback() {
         return feedbackRepository.findAll();
     }
